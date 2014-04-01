@@ -23,6 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AddressBookEntry.cs" />
+    <Compile Include="AuthenticatingCryptoStream.cs" />
     <Compile Include="BadAddressBookEntryException.cs" />
     <Compile Include="Channel.cs" />
     <Compile Include="CryptoSettings.cs" />

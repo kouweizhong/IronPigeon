@@ -88,7 +88,9 @@
 			var messages = await channel.ReceiveAsync();
 			Assert.Equal(1, messages.Count);
 			Assert.Equal(Valid.Message.ContentType, messages[0].Payload.ContentType);
-			Assert.Equal(((MemoryStream)Valid.Message.Content).ToArray(), ((MemoryStream)messages[0].Payload.Content).ToArray());
+			var payloadCopy = new MemoryStream();
+			await messages[0].Payload.Content.CopyToAsync(payloadCopy);
+            Assert.Equal(((MemoryStream)Valid.Message.Content).ToArray(), payloadCopy.ToArray());
 		}
 	}
 }

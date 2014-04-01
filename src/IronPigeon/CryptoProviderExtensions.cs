@@ -165,14 +165,20 @@
 			Requires.NotNull(data, "data");
 			Requires.NotNull(expectedHash, "expectedHash");
 
+			IHashAlgorithmProvider hasher = GetHashAlgorithmConsideringLength(expectedHash, hashAlgorithm);
+			byte[] actualHash = hasher.HashData(data);
+			return Utilities.AreEquivalent(expectedHash, actualHash);
+		}
+
+		internal static IHashAlgorithmProvider GetHashAlgorithmConsideringLength(byte[] expectedHash, HashAlgorithm? hashAlgorithm) {
 			if (!hashAlgorithm.HasValue) {
 				hashAlgorithm = Utilities.GuessHashAlgorithmFromLength(expectedHash.Length);
 			}
 
 			var hasher = WinRTCrypto.HashAlgorithmProvider.OpenAlgorithm(hashAlgorithm.Value);
-			byte[] actualHash = hasher.HashData(data);
-			return Utilities.AreEquivalent(expectedHash, actualHash);
+			return hasher;
 		}
+
 
 		/// <summary>
 		/// Verifies the asymmetric signature of some data blob.

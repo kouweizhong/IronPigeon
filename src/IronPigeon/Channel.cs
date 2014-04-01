@@ -246,21 +246,30 @@
 		public virtual async Task<Payload> DownloadPayloadAsync(PayloadReference notification, CancellationToken cancellationToken = default(CancellationToken)) {
 			Requires.NotNull(notification, "notification");
 
-			var responseMessage = await this.HttpClient.GetAsync(notification.Location, cancellationToken);
-			var messageBuffer = await responseMessage.Content.ReadAsByteArrayAsync();
+			var responseMessage = await this.HttpClient.GetAsync(notification.Location, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-			// Calculate hash of downloaded message and check that it matches the referenced message hash.
-			if (!this.CryptoServices.IsHashMatchWithTolerantHashAlgorithm(messageBuffer, notification.Hash, CryptoProviderExtensions.ParseHashAlgorithmName(notification.HashAlgorithmName))) {
-				throw new InvalidMessageException();
-			}
+			// We can't afford to buffer the entire payload in memory (we have no idea how large it might be).
+			// So rather than verify the hash upfront, we'll hash as the stream is read and verify at the end.
+			// This means that the caller can read most (or perhaps all) of the decrypted stream before the
+			// exception is thrown to indicate that the hash didn't match. But the exception will be thrown
+			// before they realize they've reached the end of the stream, so any full stream read should cause
+			// the exception to be thrown to them.
+			var hasher = CryptoProviderExtensions.GetHashAlgorithmConsideringLength(notification.Hash, CryptoProviderExtensions.ParseHashAlgorithmName(notification.HashAlgorithmName))
+				.CreateHash();
+			var verifyingHasher = new VerifyingCryptoTransform(
+				hasher,
+				() => {
+					// Calculate hash of downloaded message and check that it matches the referenced message hash.
+					if (!Utilities.AreEquivalent(hasher.GetValueAndReset(), notification.Hash)) {
+						throw new InvalidMessageException();
+					}
+				});
+			var decryptor = WinRTCrypto.CryptographicEngine.CreateDecryptor(
+				CryptoSettings.SymmetricAlgorithm.CreateSymmetricKey(notification.Key),
+				notification.IV);
 
-			var encryptionVariables = new SymmetricEncryptionVariables(notification.Key, notification.IV);
-
-			var cipherStream = new MemoryStream(messageBuffer);
-			var plainTextStream = new MemoryStream();
-			await this.CryptoServices.DecryptAsync(cipherStream, plainTextStream, encryptionVariables, cancellationToken);
-			plainTextStream.Position = 0;
-			Payload message = new Payload(plainTextStream, responseMessage.Content.Headers.ContentType);
+			var cryptoStream = CryptoStream.ReadFrom(await responseMessage.Content.ReadAsStreamAsync(), verifyingHasher, decryptor);
+			Payload message = new Payload(cryptoStream, responseMessage.Content.Headers.ContentType);
 			message.PayloadReferenceUri = notification.ReferenceLocation;
 			return message;
 		}
@@ -300,7 +309,7 @@
 			await this.CryptoServices.DecryptAsync(ciphertextStream, plainTextPayloadStream, encryptedVariables, cancellationToken);
 
 			plainTextPayloadStream.Position = 0;
-			AsymmetricAlgorithm? signingHashAlgorithm = null;   //// Encoding.UTF8.GetString(await plainTextPayloadStream.ReadSizeAndBufferAsync(cancellationToken));
+			AsymmetricAlgorithm? signingHashAlgorithm = null;	//// Encoding.UTF8.GetString(await plainTextPayloadStream.ReadSizeAndBufferAsync(cancellationToken));
 			byte[] signature = await plainTextPayloadStream.ReadSizeAndBufferAsync(cancellationToken);
 			long payloadStartPosition = plainTextPayloadStream.Position;
 			var signedBytes = new byte[plainTextPayloadStream.Length - plainTextPayloadStream.Position];

@@ -2,6 +2,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Diagnostics;
+	using System.IO;
 	using System.Linq;
 	using System.Net.Http;
 	using System.Text;
@@ -86,7 +87,9 @@
 				Assert.That(messages.Count, Is.EqualTo(1));
 				var receivedMessage = messages.Single();
 				Assert.That(receivedMessage.Payload.ContentType, Is.EqualTo(sentMessage.ContentType));
-				Assert.That(receivedMessage.Payload.Content, Is.EqualTo(sentMessage.Content));
+				var payloadCopy = new MemoryStream();
+				await receivedMessage.Payload.Content.CopyToAsync(payloadCopy);
+				Assert.That(payloadCopy, Is.EqualTo(sentMessage.Content));
 			}).GetAwaiter().GetResult();
 		}
 
@@ -179,15 +182,32 @@
 			var progress = new Progress<Channel.PayloadReceipt>(m => progressMessage.SetResult(m.Payload));
 
 			var messages = await channel.ReceiveAsync(progress: progress);
-			if (expectMessage) {
-				Assert.That(messages.Count, Is.EqualTo(1));
-				await progressMessage.Task;
-				Assert.That(progressMessage.Task.Result, Is.SameAs(messages.Single().Payload));
-			} else {
-				Assert.That(messages.Count, Is.EqualTo(0));
+
+			// Invalid messages are only recognized by reading the stream to the end.
+			// So we must do that, but we also need to preserve the stream for our caller
+			// so copy it to a memory stream and create a new payload receipt for it
+			// if the message was valid.
+			var validMessages = new List<Channel.PayloadReceipt>(messages.Count);
+			foreach (var message in messages) {
+				try {
+					var payloadCopy = new MemoryStream();
+					await messages[0].Payload.Content.CopyToAsync(payloadCopy);
+					payloadCopy.Position = 0;
+					message.Payload.Content = payloadCopy;
+					validMessages.Add(message);
+				} catch (InvalidMessageException) {
+				}
 			}
 
-			return messages;
+			if (expectMessage) {
+				Assert.That(validMessages.Count, Is.EqualTo(1));
+				await progressMessage.Task;
+				Assert.That(progressMessage.Task.Result, Is.SameAs(validMessages.Single().Payload));
+			} else {
+				Assert.That(validMessages.Count, Is.EqualTo(0));
+			}
+
+			return validMessages;
 		}
 	}
 }
