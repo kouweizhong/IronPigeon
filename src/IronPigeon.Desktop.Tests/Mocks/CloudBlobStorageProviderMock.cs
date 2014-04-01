@@ -4,6 +4,7 @@
 	using System.IO;
 	using System.Linq;
 	using System.Net.Http;
+	using System.Net.Http.Headers;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -13,26 +14,27 @@
 	internal class CloudBlobStorageProviderMock : ICloudBlobStorageProvider {
 		internal static readonly string BaseUploadUri = "http://localhost/blob/";
 
-		private readonly Dictionary<Uri, byte[]> blobs = new Dictionary<Uri, byte[]>();
+		private readonly Dictionary<Uri, Tuple<MediaTypeHeaderValue, byte[]>> blobs = new Dictionary<Uri, Tuple<MediaTypeHeaderValue, byte[]>>();
 
 		internal CloudBlobStorageProviderMock() {
 		}
 
-		internal Dictionary<Uri, byte[]> Blobs {
+		internal Dictionary<Uri, Tuple<MediaTypeHeaderValue, byte[]>> Blobs {
 			get { return this.blobs; }
 		}
 
 		#region ICloudBlobStorageProvider Members
 
-		public async Task<Uri> UploadMessageAsync(Stream encryptedMessageContent, DateTime expiration, string contentType, string contentEncoding, IProgress<int> bytesCopiedProgress, CancellationToken cancellationToken) {
+		public async Task<Uri> UploadMessageAsync(Stream encryptedMessageContent, DateTime expiration, MediaTypeHeaderValue contentType, string contentEncoding, IProgress<int> bytesCopiedProgress, CancellationToken cancellationToken) {
 			Assert.That(encryptedMessageContent.Length, Is.GreaterThan(0));
 			Assert.That(encryptedMessageContent.Position, Is.EqualTo(0));
 
 			var buffer = new byte[encryptedMessageContent.Length - encryptedMessageContent.Position];
 			await encryptedMessageContent.ReadAsync(buffer, 0, buffer.Length);
-			lock (this.blobs) {
+			lock (this.blobs)
+			{
 				var contentUri = new Uri(BaseUploadUri + (this.blobs.Count + 1));
-				this.blobs[contentUri] = buffer;
+				this.blobs[contentUri] = Tuple.Create(contentType, buffer);
 				return contentUri;
 			}
 		}
@@ -45,9 +47,11 @@
 		}
 
 		private Task<HttpResponseMessage> HandleRequest(HttpRequestMessage request) {
-			byte[] buffer;
-			if (this.blobs.TryGetValue(request.RequestUri, out buffer)) {
-				return Task.FromResult(new HttpResponseMessage() { Content = new StreamContent(new MemoryStream(buffer)) });
+			Tuple<MediaTypeHeaderValue, byte[]> contentTypeAndBuffer;
+			if (this.blobs.TryGetValue(request.RequestUri, out contentTypeAndBuffer)) {
+				var content = new StreamContent(new MemoryStream(contentTypeAndBuffer.Item2));
+				content.Headers.ContentType = contentTypeAndBuffer.Item1;
+				return Task.FromResult(new HttpResponseMessage() { Content = content });
 			}
 
 			return Task.FromResult<HttpResponseMessage>(null);

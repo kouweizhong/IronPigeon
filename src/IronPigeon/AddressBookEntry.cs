@@ -3,6 +3,7 @@
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
+	using System.Net.Http.Headers;
 	using System.Runtime.Serialization;
 	using System.Text;
 	using System.Threading.Tasks;
@@ -17,7 +18,7 @@
 		/// <summary>
 		/// The Content-Type that identifies a blob containing a serialized instance of this type.
 		/// </summary>
-		public const string ContentType = "ironpigeon/addressbookentry";
+		public static readonly MediaTypeHeaderValue ContentType = new MediaTypeHeaderValue("ironpigeon/addressbookentry");
 
 		/// <summary>
 		/// Gets or sets the serialized <see cref="Endpoint"/>.

@@ -53,14 +53,14 @@
 		public HttpClient HttpClient { get; set; }
 
 		/// <inheritdoc/>
-		public async Task<Uri> UploadMessageAsync(Stream content, DateTime expirationUtc, string contentType = null, string contentEncoding = null, IProgress<int> bytesCopiedProgress = null, CancellationToken cancellationToken = default(CancellationToken)) {
+		public async Task<Uri> UploadMessageAsync(Stream content, DateTime expirationUtc, MediaTypeHeaderValue contentType = null, string contentEncoding = null, IProgress<int> bytesCopiedProgress = null, CancellationToken cancellationToken = default(CancellationToken)) {
 			var httpContent = new StreamContent(content.ReadStreamWithProgress(bytesCopiedProgress));
 			if (content.CanSeek) {
 				httpContent.Headers.ContentLength = content.Length;
 			}
 
 			if (contentType != null) {
-				httpContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+				httpContent.Headers.ContentType = contentType;
 			}
 
 			if (contentEncoding != null) {

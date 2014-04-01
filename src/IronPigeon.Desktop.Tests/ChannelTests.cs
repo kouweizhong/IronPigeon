@@ -127,7 +127,7 @@
 					await this.SendMessageAsync(cloudStorage, inboxMock, this.desktopCryptoProvider, sender, receiver.PublicEndpoint, sentMessage);
 
 					// Tamper with the payload itself.
-					TestUtilities.ApplyFuzzing(cloudStorage.Blobs.Single().Value, 1);
+					TestUtilities.ApplyFuzzing(cloudStorage.Blobs.Single().Value.Item2, 1);
 
 					var receivedMessages =
 						await this.ReceiveMessageAsync(cloudStorage, inboxMock, this.desktopCryptoProvider, receiver, expectMessage: false);

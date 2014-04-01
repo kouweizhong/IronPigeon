@@ -3,6 +3,7 @@
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
+	using System.Net.Http.Headers;
 	using System.Runtime.Serialization;
 	using System.Text;
 	using System.Threading.Tasks;
@@ -18,7 +19,7 @@
 		/// <summary>
 		/// The content-type that identifies darts as the payload to an IronPigeon message.
 		/// </summary>
-		public const string ContentType = "application/dart";
+		public static readonly MediaTypeHeaderValue ContentType = new MediaTypeHeaderValue("application/dart");
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Message" /> class.

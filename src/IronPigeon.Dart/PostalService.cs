@@ -5,6 +5,7 @@
 	using System.Composition;
 	using System.IO;
 	using System.Linq;
+	using System.Net.Http.Headers;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -38,7 +39,7 @@
 			writer.Flush();
 			ms.Position = 0;
 
-			var payload = new Payload(ms.ToArray(), Message.ContentType);
+			var payload = new Payload(ms, Message.ContentType);
 			var allRecipients = new List<Endpoint>(message.Recipients);
 			if (message.CarbonCopyRecipients != null) {
 				allRecipients.AddRange(message.CarbonCopyRecipients);
@@ -114,11 +115,11 @@
 			Requires.NotNull(payloadReceipt, "payloadReceipt");
 
 			var payload = payloadReceipt.Payload;
-			if (payload.ContentType != Message.ContentType) {
+			if (!EqualityComparer<MediaTypeHeaderValue>.Default.Equals(payload.ContentType, Message.ContentType)) {
 				return null;
 			}
 
-			using (var reader = new BinaryReader(new MemoryStream(payload.Content))) {
+			using (var reader = new BinaryReader(payload.Content)) {
 				var message = reader.DeserializeDataContract<Message>();
 				message.OriginatingPayload = payload;
 				return new MessageReceipt(message, payloadReceipt.DateNotificationPosted);

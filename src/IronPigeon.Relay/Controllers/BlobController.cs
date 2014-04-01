@@ -6,6 +6,7 @@
 	using System.Linq;
 	using System.Net;
 	using System.Net.Http;
+	using System.Net.Http.Headers;
 	using System.Threading.Tasks;
 	using System.Web.Http;
 	using System.Web.Mvc;
@@ -25,7 +26,7 @@
 		internal const string DefaultContainerName = "blobs";
 
 		private static readonly SortedDictionary<int, TimeSpan> MaxBlobSizesAndLifetimes = new SortedDictionary<int, TimeSpan> {
-			{ 10 * 1024, TimeSpan.MaxValue }, // this is intended for address book entries.
+			{ 10 * 1024, TimeSpan.MaxValue },  // this is intended for address book entries.
 			{ 512 * 1024, TimeSpan.FromDays(7) },
 		};
 
@@ -62,9 +63,7 @@
 
 			var lifetime = TimeSpan.FromMinutes(lifetimeInMinutes);
 			DateTime expirationUtc = DateTime.UtcNow + lifetime;
-			string contentType = this.Request.Content.Headers.ContentType != null
-									 ? this.Request.Content.Headers.ContentType.ToString()
-									 : null;
+			MediaTypeHeaderValue contentType = this.Request.Content.Headers.ContentType;
 			string contentEncoding = this.Request.Content.Headers.ContentEncoding.FirstOrDefault();
 			var content = await this.Request.Content.ReadAsStreamAsync();
 			var errorResponse = GetDisallowedLifetimeResponse(content.Length, lifetime);
@@ -74,7 +73,7 @@
 
 			var blobLocation = await this.CloudBlobStorageProvider.UploadMessageAsync(content, expirationUtc, contentType, contentEncoding);
 
-			Uri resultLocation = contentType == AddressBookEntry.ContentType
+			Uri resultLocation = EqualityComparer<MediaTypeHeaderValue>.Default.Equals(contentType, AddressBookEntry.ContentType)
 				? new Uri(this.Url.Link("Default", new { controller = "AddressBook", blob = blobLocation.AbsoluteUri }))
 				: blobLocation;
 

@@ -7,6 +7,7 @@
 	using System.Configuration;
 	using System.IO;
 	using System.Linq;
+	using System.Net.Http.Headers;
 	using System.Text;
 	using System.Threading.Tasks;
 	using System.Windows.Forms;
@@ -69,7 +70,7 @@
 				.WithPart(typeof(DesktopChannel))
 				.WithPart(typeof(Program));
 			var container = configuration.CreateContainer();
-			
+
 			var program = container.GetExport<Program>();
 			program.DoAsync().GetAwaiter().GetResult();
 		}
@@ -215,14 +216,15 @@
 				}
 
 				if (line.Length > 0) {
-					var payload = new Payload(Encoding.UTF8.GetBytes(line), "text/plain");
+					var payload = new Payload(new MemoryStream(Encoding.UTF8.GetBytes(line)), new MediaTypeHeaderValue("text/plain"));
 					await this.Channel.PostAsync(payload, new[] { friend }, DateTime.UtcNow + TimeSpan.FromMinutes(5));
 				}
 
 				Console.WriteLine("Awaiting friend's reply...");
 				var incoming = await this.Channel.ReceiveAsync(longPoll: true);
 				foreach (var payloadReceipt in incoming) {
-					var message = Encoding.UTF8.GetString(payloadReceipt.Payload.Content);
+					var sr = new StreamReader(payloadReceipt.Payload.Content, Encoding.UTF8);
+					var message = await sr.ReadToEndAsync();
 					Console.WriteLine("< {0}", message);
 				}
 

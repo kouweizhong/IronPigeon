@@ -1,6 +1,7 @@
 ﻿namespace IronPigeon {
 	using System;
 	using System.IO;
+	using System.Net.Http.Headers;
 	using System.Threading;
 	using System.Threading.Tasks;
 
@@ -19,6 +20,6 @@
 		/// <param name="bytesCopiedProgress">Receives progress feedback in terms of bytes uploaded.</param>
 		/// <param name="cancellationToken">A cancellation token.</param>
 		/// <returns>A task whose result is the URL by which the blob's content may be accessed.</returns>
-		Task<Uri> UploadMessageAsync(Stream content, DateTime expirationUtc, string contentType = null, string contentEncoding = null, IProgress<int> bytesCopiedProgress = null, CancellationToken cancellationToken = default(CancellationToken));
+		Task<Uri> UploadMessageAsync(Stream content, DateTime expirationUtc, MediaTypeHeaderValue contentType = null, string contentEncoding = null, IProgress<int> bytesCopiedProgress = null, CancellationToken cancellationToken = default(CancellationToken));
 	}
 }

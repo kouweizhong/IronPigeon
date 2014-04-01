@@ -61,9 +61,14 @@
 		[TearDown]
 		public void TearDown() {
 			try {
-				this.container.Delete();
-				var table = this.tableClient.GetTableReference(this.controller.InboxTable.TableName);
-				table.DeleteIfExists();
+				if (this.container != null) {
+					this.container.Delete();
+				}
+
+				if (this.tableClient != null) {
+					var table = this.tableClient.GetTableReference(this.controller.InboxTable.TableName);
+					table.DeleteIfExists();
+				}
 			} catch (StorageException ex) {
 				bool handled = false;
 				var webException = ex.InnerException as WebException;

@@ -223,16 +223,8 @@
 
 			cancellationToken.ThrowIfCancellationRequested();
 
-			var plainTextStream = new MemoryStream();
-			var writer = new BinaryWriter(plainTextStream);
-			writer.SerializeDataContract(message);
-			writer.Flush();
-			var plainTextBuffer = plainTextStream.ToArray();
-			this.Log("Message plaintext", plainTextBuffer);
-
-			plainTextStream.Position = 0;
 			var cipherTextStream = new MemoryStream();
-			var encryptionVariables = await this.CryptoServices.EncryptAsync(plainTextStream, cipherTextStream, cancellationToken: cancellationToken);
+			var encryptionVariables = await this.CryptoServices.EncryptAsync(message.Content, cipherTextStream, cancellationToken: cancellationToken);
 			this.Log("Message symmetrically encrypted", cipherTextStream.ToArray());
 			this.Log("Message symmetric key", encryptionVariables.Key);
 			this.Log("Message symmetric IV", encryptionVariables.IV);
@@ -270,8 +262,7 @@
 			var plainTextStream = new MemoryStream();
 			await this.CryptoServices.DecryptAsync(cipherStream, plainTextStream, encryptionVariables, cancellationToken);
 			plainTextStream.Position = 0;
-			var plainTextReader = new BinaryReader(plainTextStream);
-			var message = Utilities.DeserializeDataContract<Payload>(plainTextReader);
+			Payload message = new Payload(plainTextStream, responseMessage.Content.Headers.ContentType);
 			message.PayloadReferenceUri = notification.ReferenceLocation;
 			return message;
 		}

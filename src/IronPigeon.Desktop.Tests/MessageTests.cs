@@ -1,6 +1,7 @@
 ﻿namespace IronPigeon.Tests {
 	using System;
 	using System.Collections.Generic;
+	using System.IO;
 	using System.Linq;
 	using System.Text;
 	using System.Threading.Tasks;
@@ -11,14 +12,14 @@
 		[Test]
 		public void CtorInvalidArgs() {
 			Assert.Throws<ArgumentNullException>(() => new Payload(null, Valid.ContentType));
-			Assert.Throws<ArgumentNullException>(() => new Payload(Valid.MessageContent, null));
-			Assert.Throws<ArgumentException>(() => new Payload(Valid.MessageContent, string.Empty));
+			Assert.Throws<ArgumentNullException>(() => new Payload(new MemoryStream(Valid.MessageContent), null));
 		}
 
 		[Test]
 		public void Ctor() {
-			var message = new Payload(Valid.MessageContent, Valid.ContentType);
-			Assert.That(message.Content, Is.SameAs(Valid.MessageContent));
+			var content = new MemoryStream(Valid.MessageContent);
+			var message = new Payload(content, Valid.ContentType);
+			Assert.That(message.Content, Is.SameAs(content));
 			Assert.That(message.ContentType, Is.EqualTo(Valid.ContentType));
 		}
 	}

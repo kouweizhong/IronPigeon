@@ -52,7 +52,7 @@
 			Requires.NotNull(entryLocation, "entryLocation");
 
 			var request = new HttpRequestMessage(HttpMethod.Get, entryLocation);
-			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(AddressBookEntry.ContentType));
+			request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(AddressBookEntry.ContentType.ToString()));
 			var response = await this.HttpClient.SendAsync(request, cancellationToken);
 			if (!response.IsSuccessStatusCode) {
 				return null;

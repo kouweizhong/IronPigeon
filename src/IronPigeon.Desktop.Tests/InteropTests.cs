@@ -2,6 +2,7 @@
 	using System;
 	using System.Collections.Generic;
 	using System.Composition.Hosting;
+	using System.IO;
 	using System.Linq;
 	using System.Net.Http;
 	using System.Text;
@@ -86,7 +87,8 @@
 
 			var messages = await channel.ReceiveAsync();
 			Assert.Equal(1, messages.Count);
-			Assert.Equal(Valid.Message, messages[0].Payload);
+			Assert.Equal(Valid.Message.ContentType, messages[0].Payload.ContentType);
+			Assert.Equal(((MemoryStream)Valid.Message.Content).ToArray(), ((MemoryStream)messages[0].Payload.Content).ToArray());
 		}
 	}
 }

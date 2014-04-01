@@ -5,6 +5,7 @@
 	using System.Globalization;
 	using System.IO;
 	using System.Linq;
+	using System.Net.Http.Headers;
 	using System.Text;
 	using System.Threading;
 	using System.Threading.Tasks;
@@ -54,7 +55,7 @@
 		#region ICloudBlobStorageProvider Members
 
 		/// <inheritdoc/>
-		public async Task<Uri> UploadMessageAsync(Stream content, DateTime expirationUtc, string contentType, string contentEncoding, IProgress<int> bytesCopiedProgress, CancellationToken cancellationToken = default(CancellationToken)) {
+		public async Task<Uri> UploadMessageAsync(Stream content, DateTime expirationUtc, MediaTypeHeaderValue contentType, string contentEncoding, IProgress<int> bytesCopiedProgress, CancellationToken cancellationToken = default(CancellationToken)) {
 			Requires.NotNull(content, "content");
 			Requires.Range(expirationUtc > DateTime.UtcNow, "expirationUtc");
 
@@ -72,7 +73,7 @@
 				blob.Metadata["DeleteAfter"] = expirationUtc.ToString(CultureInfo.InvariantCulture);
 			}
 
-			blob.Properties.ContentType = contentType;
+			blob.Properties.ContentType = contentType != null ? contentType.ToString() : null;
 			blob.Properties.ContentEncoding = contentEncoding;
 
 			await blob.UploadFromStreamAsync(content.ReadStreamWithProgress(bytesCopiedProgress), cancellationToken);

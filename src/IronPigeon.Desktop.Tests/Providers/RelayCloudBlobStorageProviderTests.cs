@@ -4,6 +4,7 @@
 	using System.IO;
 	using System.Linq;
 	using System.Net.Http;
+	using System.Net.Http.Headers;
 	using System.Text;
 	using System.Threading.Tasks;
 	using IronPigeon.Providers;
@@ -24,14 +25,14 @@
 		public void UploadTest() {
 			var content = new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!"));
 			var location = this.provider.UploadMessageAsync(
-				content, DateTime.UtcNow + TimeSpan.FromMinutes(5.5), "application/testcontent", "testencoding").Result;
+				content, DateTime.UtcNow + TimeSpan.FromMinutes(5.5), new MediaTypeHeaderValue("application/testcontent"), "testencoding").Result;
 			Assert.AreEqual("http://127.0.0.1:10000/devstoreaccount1/blobs/2012.08.26/22A0FLkPHlM-T5q", location.AbsoluteUri);
 
 			var progress = new Progress<int>(p => { });
 			content = new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!"));
 			location = this.provider.UploadMessageAsync(
-				content, DateTime.UtcNow + TimeSpan.FromMinutes(5.5), "application/testcontent", "testencoding", progress).Result;
-			Assert.AreEqual("http://127.0.0.1:10000/devstoreaccount1/blobs/2012.08.26/22A0FLkPHlM-T5q", location.AbsoluteUri);		
+				content, DateTime.UtcNow + TimeSpan.FromMinutes(5.5), new MediaTypeHeaderValue("application/testcontent"), "testencoding", progress).Result;
+			Assert.AreEqual("http://127.0.0.1:10000/devstoreaccount1/blobs/2012.08.26/22A0FLkPHlM-T5q", location.AbsoluteUri);
 		}
 
 		private class ContentLengthVerifyingMockHandler : MessageProcessingHandler {
