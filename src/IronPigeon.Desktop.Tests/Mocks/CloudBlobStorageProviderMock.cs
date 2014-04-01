@@ -26,11 +26,10 @@
 		#region ICloudBlobStorageProvider Members
 
 		public async Task<Uri> UploadMessageAsync(Stream encryptedMessageContent, DateTime expiration, MediaTypeHeaderValue contentType, string contentEncoding, IProgress<int> bytesCopiedProgress, CancellationToken cancellationToken) {
-			Assert.That(encryptedMessageContent.Length, Is.GreaterThan(0));
-			Assert.That(encryptedMessageContent.Position, Is.EqualTo(0));
-
-			var buffer = new byte[encryptedMessageContent.Length - encryptedMessageContent.Position];
-			await encryptedMessageContent.ReadAsync(buffer, 0, buffer.Length);
+			var ms = new MemoryStream();
+			await encryptedMessageContent.CopyToAsync(ms, 4096, cancellationToken);
+			var buffer = ms.ToArray();
+			Assert.That(buffer.Length, Is.GreaterThan(0));
 			lock (this.blobs)
 			{
 				var contentUri = new Uri(BaseUploadUri + (this.blobs.Count + 1));

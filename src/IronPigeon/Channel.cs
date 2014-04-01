@@ -223,20 +223,18 @@
 
 			cancellationToken.ThrowIfCancellationRequested();
 
-			var cipherTextStream = new MemoryStream();
-			var encryptionVariables = await this.CryptoServices.EncryptAsync(message.Content, cipherTextStream, cancellationToken: cancellationToken);
-			this.Log("Message symmetrically encrypted", cipherTextStream.ToArray());
-			this.Log("Message symmetric key", encryptionVariables.Key);
-			this.Log("Message symmetric IV", encryptionVariables.IV);
+			var encryptionVariables = CryptoProviderExtensions.NewSymmetricEncryptionVariables(this.CryptoServices);
+			var encryptor = WinRTCrypto.CryptographicEngine.CreateEncryptor(
+				CryptoSettings.SymmetricAlgorithm.CreateSymmetricKey(encryptionVariables.Key),
+				encryptionVariables.IV);
+			var hasher = WinRTCrypto.HashAlgorithmProvider.OpenAlgorithm(this.CryptoServices.SymmetricHashAlgorithm)
+				.CreateHash();
 
-			cipherTextStream.Position = 0;
-			var hasher = WinRTCrypto.HashAlgorithmProvider.OpenAlgorithm(this.CryptoServices.SymmetricHashAlgorithm);
-			var messageHash = hasher.HashData(cipherTextStream.ToArray());
-			this.Log("Encrypted message hash", messageHash);
-
-			cipherTextStream.Position = 0;
-			Uri blobUri = await this.CloudBlobStorage.UploadMessageAsync(cipherTextStream, expiresUtc, contentType: message.ContentType, bytesCopiedProgress: bytesCopiedProgress, cancellationToken: cancellationToken);
-			return new PayloadReference(blobUri, messageHash, this.CryptoServices.SymmetricHashAlgorithm.GetHashAlgorithmName(), encryptionVariables.Key, encryptionVariables.IV, expiresUtc);
+			using (var cryptoStream = CryptoStream.ReadFrom(message.Content, encryptor, hasher)) {
+				Uri blobUri = await this.CloudBlobStorage.UploadMessageAsync(cryptoStream, expiresUtc, contentType: message.ContentType, bytesCopiedProgress: bytesCopiedProgress, cancellationToken: cancellationToken);
+				byte[] messageHash = hasher.GetValueAndReset();
+				return new PayloadReference(blobUri, messageHash, this.CryptoServices.SymmetricHashAlgorithm.GetHashAlgorithmName(), encryptionVariables.Key, encryptionVariables.IV, expiresUtc);
+			}
 		}
 
 		/// <summary>
@@ -302,7 +300,7 @@
 			await this.CryptoServices.DecryptAsync(ciphertextStream, plainTextPayloadStream, encryptedVariables, cancellationToken);
 
 			plainTextPayloadStream.Position = 0;
-			AsymmetricAlgorithm? signingHashAlgorithm = null;  //// Encoding.UTF8.GetString(await plainTextPayloadStream.ReadSizeAndBufferAsync(cancellationToken));
+			AsymmetricAlgorithm? signingHashAlgorithm = null;   //// Encoding.UTF8.GetString(await plainTextPayloadStream.ReadSizeAndBufferAsync(cancellationToken));
 			byte[] signature = await plainTextPayloadStream.ReadSizeAndBufferAsync(cancellationToken);
 			long payloadStartPosition = plainTextPayloadStream.Position;
 			var signedBytes = new byte[plainTextPayloadStream.Length - plainTextPayloadStream.Position];

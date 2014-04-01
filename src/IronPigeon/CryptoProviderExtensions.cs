@@ -227,7 +227,7 @@
 		/// <returns>
 		/// A set of encryption variables.
 		/// </returns>
-		private static SymmetricEncryptionVariables NewSymmetricEncryptionVariables(CryptoSettings cryptoProvider) {
+		internal static SymmetricEncryptionVariables NewSymmetricEncryptionVariables(CryptoSettings cryptoProvider) {
 			byte[] key = WinRTCrypto.CryptographicBuffer.GenerateRandom((uint)cryptoProvider.SymmetricKeySize / 8);
 			byte[] iv = WinRTCrypto.CryptographicBuffer.GenerateRandom((uint)CryptoSettings.SymmetricAlgorithm.BlockLength);
 			return new SymmetricEncryptionVariables(key, iv);
