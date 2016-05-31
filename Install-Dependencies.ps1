@@ -1,6 +1,8 @@
 $AzureStorageEmulator = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe"
 
-if (!(Test-Path $AzureStorageEmulator)) {
+if ((Test-Path $AzureStorageEmulator)) {
+    Write-Verbose "Azure Storage Emulator detected as already installed."
+} else {
     $AzureStorageEmulatorInstallerPath = "$env:temp\AzureEmulatorInstaller.msi"
     if (!(Test-Path $AzureStorageEmulatorInstallerPath)) {
         Write-Host "Downloading the Azure Storage Emulator..." -ForegroundColor Green
@@ -14,5 +16,10 @@ if (!(Test-Path $AzureStorageEmulator)) {
     & $AzureStorageEmulator init -inprocess
 }
 
-Write-Host "Starting the Azure Storage Emulator..." -ForegroundColor Green
-& $AzureStorageEmulator start
+$status = & $AzureStorageEmulator status
+if ($status -match "IsRunning: true") {
+    Write-Verbose "Azure Storage Emulator is already running."
+} else { 
+    Write-Host "Starting the Azure Storage Emulator..." -ForegroundColor Green
+    & $AzureStorageEmulator start
+}
