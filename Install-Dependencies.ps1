@@ -6,4 +6,5 @@ if (!(Test-Path $AzureStorageEmulatorInstallerPath)) {
 
 Start-Process -FilePath msiexec -ArgumentList '/i',"$AzureStorageEmulatorInstallerPath","/passive","/norestart" -Wait
 $AzureStorageEmulator = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe"
+& $AzureStorageEmulator init
 & $AzureStorageEmulator start
