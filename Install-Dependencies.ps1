@@ -9,5 +9,5 @@ Write-Host "Installing the Azure Storage Emulator..." -ForegroundColor Green
 Start-Process -FilePath msiexec -ArgumentList '/i',"$AzureStorageEmulatorInstallerPath","/passive","/norestart" -Wait
 $AzureStorageEmulator = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\Storage Emulator\AzureStorageEmulator.exe"
 Write-Host "Starting the Azure Storage Emulator..." -ForegroundColor Green
-& $AzureStorageEmulator init
+& $AzureStorageEmulator init -inprocess
 & $AzureStorageEmulator start
